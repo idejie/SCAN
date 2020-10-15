@@ -30,9 +30,9 @@ import argparse
 def main():
     # Hyper Parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', default='./data/',
+    parser.add_argument('--data_path', default='/home/dejie/data/data/',
                         help='path to datasets')
-    parser.add_argument('--data_name', default='precomp',
+    parser.add_argument('--data_name', default='f30k_precomp',
                         help='{coco,f30k}_precomp')
     parser.add_argument('--vocab_path', default='./vocab/',
                         help='Path to saved vocabulary json files.')
@@ -163,7 +163,7 @@ def train(opt, train_loader, model, epoch, val_loader):
         model.train_start()
 
         # measure data loading time
-        data_time.update(time.time() - end)
+        data_time.update(time.time() - end,1)
 
         # make sure train logger is used
         model.logger = train_logger
@@ -172,7 +172,7 @@ def train(opt, train_loader, model, epoch, val_loader):
         model.train_emb(*train_data)
 
         # measure elapsed time
-        batch_time.update(time.time() - end)
+        batch_time.update(time.time() - end,1)
         end = time.time()
 
         # Print log info

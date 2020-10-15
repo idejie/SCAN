@@ -67,7 +67,7 @@ class LogCollector(object):
         """Concatenate the meters in one log line
         """
         s = ''
-        for i, (k, v) in enumerate(self.meters.iteritems()):
+        for i, (k, v) in enumerate(self.meters.items()):
             if i > 0:
                 s += '  '
             s += k + ' ' + str(v)
@@ -76,7 +76,7 @@ class LogCollector(object):
     def tb_log(self, tb_logger, prefix='', step=None):
         """Log using tensorboard
         """
-        for k, v in self.meters.iteritems():
+        for k, v in self.meters.items():
             tb_logger.log_value(prefix + k, v.val, step=step)
 
 
@@ -124,7 +124,7 @@ def encode_data(model, data_loader, log_step=10, logging=print):
         model.forward_loss(img_emb, cap_emb, cap_len)
 
         # measure elapsed time
-        batch_time.update(time.time() - end)
+        batch_time.update(time.time() - end,1)
         end = time.time()
 
         if i % log_step == 0:
@@ -258,8 +258,8 @@ def shard_xattn_t2i(images, captions, caplens, opt, shard_size=128):
     """
     Computer pairwise t2i image-caption distance with locality sharding
     """
-    n_im_shard = (len(images)-1)/shard_size + 1
-    n_cap_shard = (len(captions)-1)/shard_size + 1
+    n_im_shard = (len(images)-1)//shard_size + 1
+    n_cap_shard = (len(captions)-1)//shard_size + 1
     
     d = np.zeros((len(images), len(captions)))
     for i in range(n_im_shard):
@@ -267,11 +267,12 @@ def shard_xattn_t2i(images, captions, caplens, opt, shard_size=128):
         for j in range(n_cap_shard):
             sys.stdout.write('\r>> shard_xattn_t2i batch (%d,%d)' % (i,j))
             cap_start, cap_end = shard_size*j, min(shard_size*(j+1), len(captions))
-            im = Variable(torch.from_numpy(images[im_start:im_end]), volatile=True).cuda()
-            s = Variable(torch.from_numpy(captions[cap_start:cap_end]), volatile=True).cuda()
-            l = caplens[cap_start:cap_end]
-            sim = xattn_score_t2i(im, s, l, opt)
-            d[im_start:im_end, cap_start:cap_end] = sim.data.cpu().numpy()
+            with torch.no_grad():
+                im = Variable(torch.from_numpy(images[im_start:im_end])).cuda()
+                s = Variable(torch.from_numpy(captions[cap_start:cap_end])).cuda()
+                l = caplens[cap_start:cap_end]
+                sim = xattn_score_t2i(im, s, l, opt)
+                d[im_start:im_end, cap_start:cap_end] = sim.data.cpu().numpy()
     sys.stdout.write('\n')
     return d
 
@@ -280,8 +281,8 @@ def shard_xattn_i2t(images, captions, caplens, opt, shard_size=128):
     """
     Computer pairwise i2t image-caption distance with locality sharding
     """
-    n_im_shard = (len(images)-1)/shard_size + 1
-    n_cap_shard = (len(captions)-1)/shard_size + 1
+    n_im_shard = (len(images)-1)//shard_size + 1
+    n_cap_shard = (len(captions)-1)//shard_size + 1
     
     d = np.zeros((len(images), len(captions)))
     for i in range(n_im_shard):
@@ -289,11 +290,12 @@ def shard_xattn_i2t(images, captions, caplens, opt, shard_size=128):
         for j in range(n_cap_shard):
             sys.stdout.write('\r>> shard_xattn_i2t batch (%d,%d)' % (i,j))
             cap_start, cap_end = shard_size*j, min(shard_size*(j+1), len(captions))
-            im = Variable(torch.from_numpy(images[im_start:im_end]), volatile=True).cuda()
-            s = Variable(torch.from_numpy(captions[cap_start:cap_end]), volatile=True).cuda()
-            l = caplens[cap_start:cap_end]
-            sim = xattn_score_i2t(im, s, l, opt)
-            d[im_start:im_end, cap_start:cap_end] = sim.data.cpu().numpy()
+            with torch.no_grad():
+                im = Variable(torch.from_numpy(images[im_start:im_end])).cuda()
+                s = Variable(torch.from_numpy(captions[cap_start:cap_end])).cuda()
+                l = caplens[cap_start:cap_end]
+                sim = xattn_score_i2t(im, s, l, opt)
+                d[im_start:im_end, cap_start:cap_end] = sim.data.cpu().numpy()
     sys.stdout.write('\n')
     return d
 
